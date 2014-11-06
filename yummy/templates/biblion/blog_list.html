@@ -9,7 +9,7 @@
     {% if posts %}
         <div class="post-list">
             {% for post in posts %}
-                <div class="post">
+                <div id="post-{{ post.pk }}" class="post">
                     <h2><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h2>
                     {% include "biblion/dateline.html" %}
                     <div class="teaser">{{ post.teaser_html|safe }}</div>
@@ -20,11 +20,11 @@
                       <button type="submit" class="btn btn-danger">Delete</button>
                     </form>
                     {% endif %}
-                    <form class="unterminate-post ajax" method="post" action="{% url 'unterminate-post' post.pk %}" style="display:none">
+                    <form data-post-id="post-{{ post.pk }}" class="unterminate-post ajax" method="post" action="{% url 'unterminate-post' post.pk %}" style="display:none">
                       "{{ post.title }}" deleted - <button type="submit" class="btn btn-link">Undo</button>
-                      <hr>
                     </form>
                 </div>
+                <hr>
             {% endfor %}
         </div>
     {% else %}
@@ -69,9 +69,9 @@ $(function() {
   });
 
   $terminateForms.on('terminated', function() {
-    if (!$('.post').is(':visible')) {
+    if (!$('.post').is(':visible') && !$('#noposts:visible').length) {
       $('.post-list').before(
-          '<p class="alert alert-info lead">No blog posts have been published.</p>');
+          '<p id="noposts" class="alert alert-info lead">No blog posts have been published.</p>');
     }
   });
 
@@ -88,9 +88,11 @@ $(function() {
   });
 
   $unterminateForms.on('eldarion-ajax:success', function(e, $unterminateForm, data) {
-    var $post = $unterminateForm.siblings().closest('.post:hidden');
-    console.debug('POST', $post);
+    var $post = $('.post#' + $unterminateForm.data('post-id'));
     if (data.recovered) {
+      $('#noposts').fadeOut('fast', function() {
+        $(this).remove();
+      });
       $unterminateForm.fadeOut('fast', function() {
         $post.fadeIn();
         $(this).detach();
