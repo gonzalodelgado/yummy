@@ -1,5 +1,6 @@
 import os
 
+import dj_database_url
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 PACKAGE_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -9,10 +10,7 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "dev.db",
-    }
+    "default": dj_database_url.config(default='sqlite:///%s/dev.db' % PROJECT_ROOT)
 }
 
 # Local time zone for this installation. Choices can be found here:
@@ -168,3 +166,9 @@ FIXTURE_DIRS = [
 ]
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# Honor the 'X-Forwarded-Proto' header for request.is_secure()
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Allow all host headers
+ALLOWED_HOSTS = ['*']
