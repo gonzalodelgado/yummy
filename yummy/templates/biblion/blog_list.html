@@ -64,7 +64,6 @@ $(function() {
   });
 
   $terminateForms.on('terminated', function() {
-    console.debug('terminated handler');
     if (!$('.post').is(':visible')) {
       $('.post-list').before(
           '<p class="alert alert-info lead">No blog posts have been published.</p>');
