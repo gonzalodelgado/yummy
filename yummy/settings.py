@@ -127,8 +127,10 @@ INSTALLED_APPS = [
 
     # external
     "biblion",
+    "reversion",
 
     # project
+    "post_terminator",
     "yummy",
 ]
 

@@ -1,7 +1,8 @@
 import json
 
+import reversion
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.views.generic import DeleteView
+from django.views.generic import DeleteView, DetailView
 from django.core.urlresolvers import reverse_lazy
 from biblion.models import Post
 
@@ -34,3 +35,28 @@ class DeletePostView(AjaxDeleteView):
     pk_url_kwarg = 'post_pk'
 
 terminate_post = DeletePostView.as_view()
+
+
+class RecoverDeletedPostView(DetailView):
+    queryset = reversion.get_deleted(Post)
+    slug_url_kwarg = 'post_pk'
+    slug_field = 'object_id'
+
+    def post(self, request, *args, **kwargs):
+        """
+        Fetch requested object and undo its deletion.
+        Return a JSON object for AJAX requests, and default to the
+        GET response otherwise (requires setting up a template).
+        """
+        if not can_delete_post(request.user):
+            return HttpResponseBadRequest()
+        default_response = super(RecoverDeletedPostView,
+                                 self).get(request, *args, **kwargs)
+        self.object.revision.revert()
+        if request.is_ajax():  # Respond with JSON to AJAX requests
+            return HttpResponse(json.dumps({'recovered': True}),
+                                content_type='application/json')
+        # otherwise return the response GET would return
+        return default_response
+
+unterminate_post = RecoverDeletedPostView.as_view()

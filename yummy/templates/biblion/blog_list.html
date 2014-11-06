@@ -20,6 +20,10 @@
                       <button type="submit" class="btn btn-danger">Delete</button>
                     </form>
                     {% endif %}
+                    <form class="unterminate-post ajax" method="post" action="{% url 'unterminate-post' post.pk %}" style="display:none">
+                      "{{ post.title }}" deleted - <button type="submit" class="btn btn-link">Undo</button>
+                      <hr>
+                    </form>
                 </div>
             {% endfor %}
         </div>
@@ -34,9 +38,10 @@
 <script>
 $(function() {
   var $terminateForms = $('form.terminate-post');
-  var showErrorMessage = function($form) {
+  var $unterminateForms = $('form.unterminate-post');
+  var showErrorMessage = function($form, message) {
     $form.find('button').before(
-      '<p class="text-danger">An error occurred trying to delete this post, please try again in a few minutes <small><a href="#" class="dismiss">dismiss</a></small></p>');
+      '<p class="text-danger">' + message + ' <small><a href="#" class="dismiss">dismiss</a></small></p>');
     $('a.dismiss').on('click', function(e) {
       e.preventDefault();
       $(this).parents('.text-danger').fadeOut();
@@ -53,13 +58,13 @@ $(function() {
         $form.trigger('terminated');
       });
     } else {
-      showErrorMessage($form);
-      $form.find('button').prop('disabled', false);
+      showErrorMessage($form, 'An error occurred trying to delete this post, please try again in a few minutes');
     }
+    $form.find('button').prop('disabled', false);
   });
 
-  $terminateForms.on('eldarion-ajax:error', function(e, $form) {
-    showErrorMessage($form);
+  $('form.ajax').on('eldarion-ajax:error', function(e, $form) {
+    showErrorMessage($form, 'An error occurred, please try again in a few minutes');
     $form.find('button').prop('disabled', false);
   });
 
@@ -67,6 +72,34 @@ $(function() {
     if (!$('.post').is(':visible')) {
       $('.post-list').before(
           '<p class="alert alert-info lead">No blog posts have been published.</p>');
+    }
+  });
+
+  $terminateForms.on('terminated', function() {
+    var $post = $(this).parent();
+    var $unterminateForm = $post.find('form.unterminate-post');
+    $unterminateForm.detach();
+    $post.before($unterminateForm);
+    $unterminateForm.fadeIn('fast');
+  });
+
+  $unterminateForms.on('eldarion-ajax:begin', function(e, $unterminateForm, data) {
+    $unterminateForm.find('button').prop('disable', true);
+  });
+
+  $unterminateForms.on('eldarion-ajax:success', function(e, $unterminateForm, data) {
+    var $post = $unterminateForm.siblings().closest('.post:hidden');
+    console.debug('POST', $post);
+    if (data.recovered) {
+      $unterminateForm.fadeOut('fast', function() {
+        $post.fadeIn();
+        $(this).detach();
+        $post.append($(this));
+        $(this).find('button').prop('disable', false);
+      });
+    } else {
+      showErrorMessage($unterminateForm,
+          'It isn\'t possible to recover this blog post right now. Try reloading the page or pushing the button again in a few minutes.');
     }
   });
 });
