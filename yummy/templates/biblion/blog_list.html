@@ -49,7 +49,9 @@ $(function() {
 
   $('form.terminate-post').on('eldarion-ajax:success', function(e, $form, data) {
     if (data.deleted) {
-      $form.parent().fadeOut();
+      $form.parent().fadeOut(400, function() {
+        $form.trigger('terminated');
+      });
     } else {
       showErrorMessage($form);
       $form.find('button').prop('disabled', false);
@@ -61,6 +63,13 @@ $(function() {
     $form.find('button').prop('disabled', false);
   });
 
+  $terminateForms.on('terminated', function() {
+    console.debug('terminated handler');
+    if (!$('.post').is(':visible')) {
+      $('.post-list').before(
+          '<p class="alert alert-info lead">No blog posts have been published.</p>');
+    }
+  });
 });
 </script>
 {% endblock %}
