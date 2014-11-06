@@ -1,5 +1,7 @@
 {% extends "biblion/blog_base.html" %}
 
+{% load staticfiles %}
+
 {% block head_title %}{{ SITE_NAME }}{% endblock %}
 
 {% block content %}
@@ -12,10 +14,53 @@
                     {% include "biblion/dateline.html" %}
                     <div class="teaser">{{ post.teaser_html|safe }}</div>
                     <p class="more"><a href="{{ post.get_absolute_url }}" class="post-link">read more...</a></p>
+                    {% if user %}
+                    <form class="terminate-post ajax" method="post" action="{% url 'terminate-post' post.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
     {% else %}
         <p class="alert alert-info lead">No blog posts have been published.</p>
     {% endif %}
+{% endblock %}
+
+{% block extra_script %}
+{{ block.super }}
+<script src="{% static "js/eldarion-ajax.min.js" %}"></script>
+<script>
+$(function() {
+  var $terminateForms = $('form.terminate-post');
+  var showErrorMessage = function($form) {
+    $form.find('button').before(
+      '<p class="text-danger">An error occurred trying to delete this post, please try again in a few minutes <small><a href="#" class="dismiss">dismiss</a></small></p>');
+    $('a.dismiss').on('click', function(e) {
+      e.preventDefault();
+      $(this).parents('.text-danger').fadeOut();
+    });
+  }; 
+
+  $terminateForms.on('eldarion-ajax:begin', function(e, $form) {
+    $form.find('button').prop('disabled', true).siblings('p.text-danger').fadeOut('fast');
+  });
+
+  $('form.terminate-post').on('eldarion-ajax:success', function(e, $form, data) {
+    if (data.deleted) {
+      $form.parent().fadeOut();
+    } else {
+      showErrorMessage($form);
+      $form.find('button').prop('disabled', false);
+    }
+  });
+
+  $terminateForms.on('eldarion-ajax:error', function(e, $form) {
+    showErrorMessage($form);
+    $form.find('button').prop('disabled', false);
+  });
+
+});
+</script>
 {% endblock %}
